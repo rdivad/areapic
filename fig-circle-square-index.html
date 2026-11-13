@@ -1,0 +1,186 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Figure Maker</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fff;--fg:#1a1a1a;--mut:#666;--bd:#ccc;--ac:#2a6fdb;--pn:#f3f3f3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1c1e;--fg:#eee;--mut:#9a9a9a;--bd:#444;--ac:#6ea8ff;--pn:#2a2a2c}}
+:root[data-theme="dark"]{--bg:#1c1c1e;--fg:#eee;--mut:#9a9a9a;--bd:#444;--ac:#6ea8ff;--pn:#2a2a2c}
+*{box-sizing:border-box}body{margin:0;padding:12px;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+button,select,input[type=text]{font:inherit;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--pn);color:var(--fg)}
+button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+label{display:flex;gap:4px;align-items:center;color:var(--mut)}
+#wrap{overflow-x:auto;border:1px solid var(--bd);border-radius:6px;background:#fff}
+svg{display:block;width:100%;max-width:800px;touch-action:none;cursor:crosshair}
+#hint{color:var(--mut);margin:6px 0}textarea{width:100%;height:110px;font:12px monospace;background:var(--pn);color:var(--fg);border:1px solid var(--bd);border-radius:6px}
+#png{max-width:100%;background:#fff;border:1px solid var(--bd);margin-top:6px}
+</style></head><body>
+<div class="row" id="tools"></div>
+<div class="row">
+<label><input type="checkbox" id="snap" checked>Snap</label>
+<label>Grid <select id="grid"><option>10</option><option selected>20</option><option>40</option></select></label>
+<label><input type="checkbox" id="showgrid" checked>Show grid</label>
+<label><input type="checkbox" id="show" checked>Dots on new points</label>
+<label><input type="checkbox" id="dash">Dotted lines</label>
+<label>Parallel marks <select id="par"><option>1</option><option>2</option><option>3</option></select></label><label><input type="checkbox" id="flip">Flip</label>
+<label><input type="checkbox" id="ends">End ticks on new lines</label>
+<label>Shade <input type="color" id="col" value="#9fd3cf"></label>
+<label><input type="checkbox" id="cfill">Fill circles and shapes</label>
+<label>Part circle <select id="asw"><option value="click">pick end with a click</option><option value="180" selected>Half (180°)</option><option value="90">Quarter (90°)</option><option value="270">Three-quarters (270°)</option><option value="120">Third (120°)</option><option value="60">Sixth (60°)</option><option value="45">Eighth (45°)</option><option value="num">Type an angle</option></select></label><input type="number" id="aang" value="135" min="1" max="359" style="width:70px;padding:6px" hidden>
+<label>Goes <select id="adir"><option value="cw">clockwise</option><option value="ccw">anticlockwise</option></select></label>
+<label>Close with <select id="acl"><option value="o">nothing (open arc)</option><option value="s">straight sides to center</option><option value="c">straight line across</option></select></label>
+<label><input type="checkbox" id="sqmk" checked>Right-angle marks on rectangles and quarter circles</label>
+<input type="text" id="txt" placeholder="Label text (e.g. 8.5 in.)" size="18">
+<label>1 grid square = <input type="number" id="upg" value="1" min="0.01" step="any" style="width:70px;padding:6px"> <input type="text" id="unit" value="ft" size="4"></label>
+<label>Lengths as <select id="fmt"><option value="0">decimals</option><option value="2">fractions (halves)</option><option value="4">fractions (quarters)</option><option value="8">fractions (eighths)</option><option value="16">fractions (sixteenths)</option></select></label>
+</div>
+<div class="row"><button id="hlp">? Instructions</button><button id="lens">Add all lengths</button><button id="angs">Add all angles</button><button id="pls">Add point labels</button><button id="undo">Undo</button><button id="fin">Finish shape (Enter)</button><button id="clr">Clear all</button>
+<button id="exs">Get SVG code</button><button id="exp">Make PNG</button><button id="exj">Save JSON</button><button id="imj">Load JSON</button></div>
+<div id="msg" style="color:var(--ac);min-height:1.3em;margin:0 0 6px"></div>
+<div id="help" hidden style="background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:10px 14px;margin-bottom:8px;line-height:1.5">
+<b>Basics</b>: pick a tool in the top row, then click on the canvas. Everything snaps to the grid (turn Snap off for free placement). Undo reverses your last action; Esc cancels a shape in progress.<br>
+<b>Point</b>: click to add a dot. Click an existing point to hide or show its dot (hidden points still work as corners).<br>
+<b>Line</b>: click points one after another to draw connected lines. Tick <i>Dotted lines</i> before drawing to make dashed lines.<br>
+<b>Fill</b>: choose a color in <i>Shade</i>, pick the Fill tool and click inside a circle, triangle, rectangle or Shade area. If shapes overlap, the smallest one under your click is filled. Click again with the same color to remove the fill, or with a different color to change it. Shapes you drew by hand with the Line tool cannot be filled; use the Shade tool for those.<br>
+<b>Triangle</b>: pick the Triangle tool and click three points. The three sides are added for you.<br>
+<b>Rectangle</b>: pick the Rectangle tool and click two opposite corners. The two clicked points are the corners of the rectangle, and the other two corners, the four sides and the right-angle marks are added for you. Its sides always run straight across and up and down. Untick <i>Right-angle marks on rectangles</i> to leave the marks off.<br>
+For both, tick <i>Fill circles and shapes</i> first to color the inside with the Shade color, and <i>Dotted lines</i> to make dashed sides. The result is ordinary points and lines, so Move, Delete, lengths, angles and labels all work on it.<br>
+<b>Circle</b>: pick the Circle tool, click the center, then click a point the circle should pass through. That second point is the edge, so you can draw a radius with the Line tool from center to edge and label it with Add all lengths. Tick <i>Dotted lines</i> for a dashed circle, or <i>Fill circles</i> to color it with the Shade color. Move: drag the center to move the whole circle, or drag the edge point to resize. Delete: click the circle's outline (or inside it if filled).<br>
+<b>Part circle</b> (half, quarter and so on): pick the Part circle tool, click the center, then click a point on the edge where the part should start. Choose the size in <i>Part circle</i>: Half, Quarter, Three-quarters, Third, Sixth or Eighth finish straight away after those two clicks, <i>Type an angle</i> uses the number you type (in degrees), and <i>pick end with a click</i> waits for a third click anywhere in the direction where the part should end. <i>Goes</i> decides which way round from the start point the part runs (clockwise or anticlockwise), so it also decides which half or quarter you get. If you get the wrong one, use the Flip part tool and click it, or press Undo. <i>Close with</i> chooses what is added: nothing (just the curved edge), straight sides from the center to each end (a pie slice, so a half circle gets its diameter and a quarter circle gets its right-angle mark), or one straight line across between the two ends. The straight sides are ordinary lines, so Add all lengths, labels and Delete work on them. Tick <i>Dotted lines</i> for a dashed curve and <i>Fill circles and shapes</i> (or use the Fill tool) to color it. Move: drag the center to move the whole part, the start point to resize it, or the end point to change where it ends. Delete: click the curved edge (or inside it if filled).<br>
+<b>Adding color</b>: choose a color in <i>Shade</i>, pick the <b>Shade</b> tool, click the corner points of the area in order, then press Enter (or click the first point again). The area fills with that color. To remove it, use Delete and click inside the colored area.<br>
+<b>Label</b>: type text in the text box (e.g. 8.5 in.), pick the Label tool, then click a line, a point, or empty space.<br>
+<b>Add all lengths</b>: labels every line with its length measured from the grid. Set <i>1 grid square =</i> to the number of units each square represents (and the unit name). Then use Move to reposition labels, or Delete to remove the ones you do not want. Pressing it again only adds labels for lines that do not have one yet. Use <i>Lengths as</i> to show fractions (for example 8 1/2 in.) instead of decimals; each length is rounded to the nearest half, quarter, eighth or sixteenth and reduced (so 2/4 shows as 1/2). Angles always use decimals. Change the grid size or scale before pressing, not after.<br>
+<b>Add all angles</b>: labels the angle at every corner in degrees, placed inside the angle. At a corner with only two lines it picks the angle facing the middle of your figure. Right angles that already have a square mark are skipped. Move or Delete any you do not want.<br>
+<b>Add point labels</b>: gives every visible dot a letter (A, B, C, ...) placed on the outside of the corner. Points with hidden dots are skipped. Letters already used are not repeated, and points that already have a letter are left alone.<br>
+<b>End ticks</b>: the small hash marks at the ends of a measurement line, like the ones beside the figure in your example. Tick <i>End ticks on new lines</i> before drawing a line, or pick the End ticks tool and click an existing line to turn its ticks on or off. For a measurement line, draw it beside the figure (use dotted or solid as you like), turn its ticks on, then add its label, for example 8 cm.<br>
+<b>Right angle</b>: click a corner point where two lines meet at exactly 90 degrees (this also works at a point sitting in the middle of another line, like where a height meets a base). The square is drawn in the corner you click toward, so click slightly to that side of the point. If the lines are not exactly perpendicular, click the corner, then one point on each side.<br>
+<b>Parallel</b>: choose 1, 2 or 3 arrows in <i>Parallel marks</i>, pick the Parallel tool, and click on a line where you want the marks. Use the same number on lines that are parallel to each other. Tick <i>Flip</i> to reverse the arrow direction. Delete removes a mark when you click it.<br>
+<b>Move</b>: drag points (lines and shading follow) or labels. <b>Delete</b>: click a label, point, line, right-angle mark, or colored area.<br>
+<b>Export</b>: Get SVG code or Make PNG gives you the finished figure. Save JSON / Load JSON lets you keep a figure and edit it later.</div>
+<div id="hint"></div>
+<div id="wrap"><svg id="c" viewBox="0 0 640 480"></svg></div>
+<textarea id="io" placeholder="SVG / JSON appears here. Paste JSON and press Load JSON."></textarea>
+<img id="png" alt="" hidden>
+<script>
+const $=id=>document.getElementById(id),svg=$('c');
+const S={pts:[],lines:[],shades:[],labels:[],rights:[],pars:[],circles:[],arcs:[]};
+let tool='point',pend=[],drag=null,hist=[];
+const TOOLS={select:'Move: drag points or labels.',point:'Click to add a point (click an existing point to show or hide its dot).',tri:'Click three points to make a triangle. The sides are drawn for you.',rect:'Click two opposite corners. The other two corners and the four sides are added for you.',circle:'Click the center, then click a point the circle passes through. Moving the center moves the whole circle; moving the edge point resizes it. Dotted lines and Fill circles apply.',arc:'Click the center, then click a point on the edge where the part starts. If Part circle is set to Half, Quarter and so on, it is finished straight away. If it is set to pick end with a click, click a third time anywhere in the direction where the part should end. Goes sets which way round from the start. Close with adds the straight sides.',flip:'Click a part circle to switch it to the other part of the circle (the bit that was left out).',line:'Click points to draw connected lines. Esc stops the chain. Toggle Dotted lines first for dashed ones.',fill:'Pick a color in Shade, then click inside a circle, triangle, rectangle or shaded area to fill it. Click again with the same color to remove the fill.',shade:'Click points in order, then Enter or click the first point to fill.',label:'Type text above, then click a line, a point, or empty space to place it.',right:'Click a corner point where two lines meet at 90 degrees. The mark is placed in the corner you click toward. If it cannot tell, click the corner, then one point on each side.',par:'Click on a line to add parallel arrow marks there. Use the same count on lines that are parallel. Flip reverses the arrow direction.',ends:'Click a line to add or remove the small hash marks at both of its ends.',del:'Click a label, point, line, right-angle mark, or shaded area to delete it.'};
+const T=$('tools');for(const k in TOOLS){const b=document.createElement('button');b.textContent={select:'Move',point:'Point',line:'Line',tri:'Triangle',rect:'Rectangle',circle:'Circle',arc:'Part circle',flip:'Flip part',fill:'Fill',shade:'Shade',label:'Label',right:'Right angle',par:'Parallel',ends:'End ticks',del:'Delete'}[k];b.onclick=()=>{tool=k;pend=[];msg('');ui()};b.dataset.t=k;T.appendChild(b)}
+function ui(){[...T.children].forEach(b=>b.classList.toggle('on',b.dataset.t==tool));$('hint').textContent=TOOLS[tool];draw()}
+function ser(){const ix=p=>S.pts.indexOf(p);return JSON.stringify({pts:S.pts.map(p=>({x:p.x,y:p.y,s:p.s})),lines:S.lines.map(l=>({a:ix(l.a),b:ix(l.b),d:l.d,t:l.t})),shades:S.shades.map(h=>({p:h.p.map(ix),c:h.c})),circles:S.circles.map(k=>({c:ix(k.c),a:ix(k.a),d:k.d,f:k.f})),arcs:S.arcs.map(k=>({c:ix(k.c),a:ix(k.a),e:ix(k.e),cw:k.cw,d:k.d,f:k.f,cl:k.cl})),labels:S.labels,rights:S.rights.map(r=>({v:ix(r.v),a:ix(r.a),b:ix(r.b)})),pars:S.pars.map(m=>({l:S.lines.indexOf(m.l),t:m.t,n:m.n,f:m.f}))})}
+function des(j){const o=JSON.parse(j),P=i=>S.pts[i];S.pts=o.pts.map(p=>({...p}));S.lines=o.lines.map(l=>({a:P(l.a),b:P(l.b),d:l.d,t:l.t}));S.shades=o.shades.map(h=>({p:h.p.map(P),c:h.c}));S.circles=(o.circles||[]).map(k=>({c:P(k.c),a:P(k.a),d:k.d,f:k.f}));S.arcs=(o.arcs||[]).map(k=>({c:P(k.c),a:P(k.a),e:P(k.e),cw:k.cw,d:k.d,f:k.f,cl:k.cl}));S.labels=o.labels.map(l=>({...l}));S.rights=o.rights.map(r=>({v:P(r.v),a:P(r.a),b:P(r.b)}));S.pars=(o.pars||[]).map(m=>({l:S.lines[m.l],t:m.t,n:m.n,f:m.f})).filter(m=>m.l);pend=[]}
+const save=()=>{hist.push(ser());if(hist.length>100)hist.shift()};
+function pos(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());let x=q.x,y=q.y;const rx=x,ry=y;if($('snap').checked){const g=+$('grid').value;x=Math.round(x/g)*g;y=Math.round(y/g)*g}return{x,y,rx,ry}}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function dSeg(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy||1;let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/L;t=Math.max(0,Math.min(1,t));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)}
+function pip(p,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>p.y)!=(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)c=!c}return c}
+const hitPt=r=>S.pts.find(p=>dist(p,{x:r.rx,y:r.ry})<10);
+const hitLine=r=>S.lines.find(l=>dSeg({x:r.rx,y:r.ry},l.a,l.b)<7);
+const hitLab=r=>S.labels.find(l=>Math.abs(l.x-r.rx)<l.t.length*4+6&&Math.abs(l.y-r.ry)<10);
+function cen(){if(!S.pts.length)return{x:320,y:240};return{x:S.pts.reduce((s,p)=>s+p.x,0)/S.pts.length,y:S.pts.reduce((s,p)=>s+p.y,0)/S.pts.length}}
+function getPt(r){let p=hitPt(r);if(!p){p={x:r.x,y:r.y,s:$('show').checked};S.pts.push(p)}return p}
+function addPoly(ps){const n=ps.length;ps.forEach((a,i)=>{const b=ps[(i+1)%n];if(!S.lines.some(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a)))S.lines.push({a,b,d:$('dash').checked,t:false})});S.shades.push({p:ps.slice(),c:$('cfill').checked?$('col').value:null})}
+function ptAt(x,y){let p=S.pts.find(q=>Math.abs(q.x-x)<1&&Math.abs(q.y-y)<1);if(!p){p={x,y,s:$('show').checked};S.pts.push(p)}return p}
+function fin(){if(tool=='shade'&&pend.length>2){save();S.shades.push({p:pend.slice(),c:$('col').value})}pend=[];draw()}
+svg.addEventListener('pointerdown',e=>{const r=pos(e),t=$('txt').value;
+if(tool=='select'){const l=hitLab(r),p=hitPt(r);if(p||l){save();drag=p||l}}
+else if(tool=='point'){const p=hitPt(r);save();if(p)p.s=!p.s;else S.pts.push({x:r.x,y:r.y,s:true})}
+else if(tool=='line'){save();const p=getPt(r);pend.push(p);if(pend.length==2){if(pend[0]!==p)S.lines.push({a:pend[0],b:p,d:$('dash').checked,t:$('ends').checked});pend=[p]}}
+else if(tool=='fill'){const q={x:r.rx,y:r.ry},col=$('col').value,cand=[];S.shades.forEach(h=>{if(pip(q,h.p)){let a=0;h.p.forEach((u,i)=>{const w=h.p[(i+1)%h.p.length];a+=u.x*w.y-w.x*u.y});cand.push({o:h,k:'c',a:Math.abs(a)/2})}});S.circles.forEach(k=>{const R=dist(k.c,k.a);if(dist(q,k.c)<R)cand.push({o:k,k:'f',a:Math.PI*R*R})});S.arcs.forEach(k=>{const P=arcPoly(k);if(pip(q,P)){let a=0;P.forEach((u,i)=>{const w=P[(i+1)%P.length];a+=u.x*w.y-w.x*u.y});cand.push({o:k,k:'f',a:Math.abs(a)/2})}});if(!cand.length)return msg('Nothing to fill there. Fill works inside circles, part circles, triangles, rectangles and Shade-tool areas.');cand.sort((x,y)=>x.a-y.a);const t=cand[0];save();t.o[t.k]=t.o[t.k]===col?null:col;msg('')}
+else if(tool=='tri'){save();const p=getPt(r);if(pend.includes(p)){hist.pop();return draw()}pend.push(p);if(pend.length==3){addPoly(pend);pend=[]}}
+else if(tool=='rect'){if(pend.length){const q=hitPt(r)||r;if(q.x==pend[0].x||q.y==pend[0].y)return msg('Pick a point that is not level with or directly above or below the first one, so the rectangle has a width and a height.')}save();const p=getPt(r);pend.push(p);if(pend.length==2){const A=pend[0],B=pend[1],C=ptAt(B.x,A.y),D=ptAt(A.x,B.y);addPoly([A,C,B,D]);if($('sqmk').checked)S.rights.push({v:A,a:C,b:D},{v:C,a:A,b:B},{v:B,a:C,b:D},{v:D,a:A,b:B});pend=[];msg('')}}
+else if(tool=='circle'){save();const p=getPt(r);pend.push(p);if(pend.length==2){if(pend[0]!==p)S.circles.push({c:pend[0],a:p,d:$('dash').checked,f:$('cfill').checked?$('col').value:null});pend=pend[0]===p?[p]:[]}}
+else if(tool=='arc'){const mode=$('asw').value,cw=$('adir').value=='cw';
+if(pend.length==1&&(hitPt(r)===pend[0]||(r.x==pend[0].x&&r.y==pend[0].y)))return msg('Click a different point for the edge of the circle, where the part starts.');
+if(pend.length==1&&mode=='num'&&!(+$('aang').value>0&&+$('aang').value<360))return msg('Type an angle between 1 and 359 degrees.');
+if(pend.length==2){const c=pend[0],a=pend[1],R=dist(c,a),dd=Math.hypot(r.x-c.x,r.y-c.y);if(dd<1)return msg('Click away from the center to show where the part ends.');const ex=c.x+(r.x-c.x)/dd*R,ey=c.y+(r.y-c.y)/dd*R,ta=Math.atan2(a.y-c.y,a.x-c.x),te=Math.atan2(ey-c.y,ex-c.x);if(Math.abs(Math.sin((te-ta)/2))<1e-3)return msg('That is the same direction as the start. Click somewhere else for the end.');save();mkArc(c,a,ptAt(rnd(ex),rnd(ey)),cw);pend=[];msg('');return draw()}
+save();const p=getPt(r);pend.push(p);
+if(pend.length==1)msg('Now click a point on the edge of the circle, where the part starts.');
+else if(mode=='click')msg('Now click anywhere in the direction where the part should end. It goes '+(cw?'clockwise':'anticlockwise')+' from the start.');
+else{const deg=mode=='num'?+$('aang').value:+mode,c=pend[0],a=pend[1],R=dist(c,a),t=Math.atan2(a.y-c.y,a.x-c.x)+(cw?1:-1)*deg*Math.PI/180;mkArc(c,a,ptAt(rnd(c.x+R*Math.cos(t)),rnd(c.y+R*Math.sin(t))),cw);pend=[];msg('')}}
+else if(tool=='flip'){const k=hitArc({x:r.rx,y:r.ry});if(!k)return msg('Click on a part circle (on its curved edge, or inside it if it is filled).');save();k.cw=!k.cw;msg('')}
+else if(tool=='shade'){save();const p=getPt(r);if(pend.length>2&&p===pend[0])return fin();pend.push(p)}
+else if(tool=='right'){save();const p0=hitPt(r);if(!pend.length&&p0&&autoRight(p0,r))return draw();pend.push(getPt(r));if(pend.length==3){S.rights.push({v:pend[0],a:pend[1],b:pend[2]});pend=[]}}
+else if(tool=='ends'){const l=hitLine(r);if(!l)return;save();l.t=!l.t}
+else if(tool=='par'){const l=hitLine(r);if(!l)return;save();const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y;let t=((r.rx-l.a.x)*dx+(r.ry-l.a.y)*dy)/(dx*dx+dy*dy);t=Math.max(.05,Math.min(.95,t));S.pars.push({l,t,n:+$('par').value,f:$('flip').checked})}
+else if(tool=='label'){if(!t)return;save();const c=cen(),p=hitPt(r),l=hitLine(r);let x=r.x,y=r.y;
+if(p){const d=Math.hypot(p.x-c.x,p.y-c.y)||1;x=p.x+(p.x-c.x)/d*16;y=p.y+(p.y-c.y)/d*16}
+else if(l){const mx=(l.a.x+l.b.x)/2,my=(l.a.y+l.b.y)/2,L=dist(l.a,l.b)||1;let nx=-(l.b.y-l.a.y)/L,ny=(l.b.x-l.a.x)/L;if(nx*(mx-c.x)+ny*(my-c.y)<0){nx=-nx;ny=-ny}x=mx+nx*14;y=my+ny*14}
+S.labels.push({x,y,t})}
+else if(tool=='del'){save();const q={x:r.rx,y:r.ry},lb=hitLab(r),p=hitPt(r),l=hitLine(r),pm=S.pars.find(m=>dist(parPos(m),q)<10),ci=S.circles.find(k=>{const R=dist(k.c,k.a),d=dist(q,k.c);return Math.abs(d-R)<7||(k.f&&d<R)}),ar=hitArc(q);
+if(lb)S.labels.splice(S.labels.indexOf(lb),1);
+else if(p){S.pts.splice(S.pts.indexOf(p),1);S.lines=S.lines.filter(l=>l.a!==p&&l.b!==p);S.pars=S.pars.filter(m=>S.lines.includes(m.l));S.circles=S.circles.filter(k=>k.c!==p&&k.a!==p);S.arcs=S.arcs.filter(k=>k.c!==p&&k.a!==p&&k.e!==p);S.rights=S.rights.filter(k=>k.v!==p&&k.a!==p&&k.b!==p);S.shades.forEach(h=>h.p=h.p.filter(x=>x!==p));S.shades=S.shades.filter(h=>h.p.length>2)}
+else if(pm)S.pars.splice(S.pars.indexOf(pm),1);
+else if(l){S.lines.splice(S.lines.indexOf(l),1);S.pars=S.pars.filter(m=>m.l!==l)}
+else if(ci)S.circles.splice(S.circles.indexOf(ci),1);
+else if(ar)S.arcs.splice(S.arcs.indexOf(ar),1);
+else{const k=S.rights.find(k=>{const c=rc(k);return dist(c,q)<9});if(k)S.rights.splice(S.rights.indexOf(k),1);else{const i=S.shades.map(h=>!!h.c&&pip(q,h.p)).lastIndexOf(true);if(i>=0)S.shades.splice(i,1)}}}
+draw()});
+svg.addEventListener('pointermove',e=>{if(!drag)return;const r=pos(e);if('s' in drag||'a' in drag){const dx=r.x-drag.x,dy=r.y-drag.y;S.circles.forEach(k=>{if(k.c===drag&&k.a!==drag){k.a.x+=dx;k.a.y+=dy}});S.arcs.forEach(k=>{if(k.c===drag&&k.a!==drag&&k.e!==drag){k.a.x+=dx;k.a.y+=dy;k.e.x+=dx;k.e.y+=dy}});drag.x=r.x;drag.y=r.y}else{drag.x=r.rx;drag.y=r.ry}draw()});
+addEventListener('pointerup',()=>drag=null);
+addEventListener('keydown',e=>{if(e.target.tagName=='INPUT'&&e.target.type=='text')return;if(e.key=='Enter')fin();if(e.key=='Escape'){pend=[];draw()}});
+function parPos(m){return{x:m.l.a.x+m.t*(m.l.b.x-m.l.a.x),y:m.l.a.y+m.t*(m.l.b.y-m.l.a.y)}}
+function autoRight(v,r){const d=[];S.lines.forEach(l=>{const o=l.a===v?[l.b]:l.b===v?[l.a]:dSeg(v,l.a,l.b)<1?[l.a,l.b]:[];o.forEach(q=>d.push(q))});
+let best=null,bs=Infinity;const cx=r.rx-v.x,cy=r.ry-v.y;
+for(let i=0;i<d.length;i++)for(let j=i+1;j<d.length;j++){const u=unit(v,d[i]),w=unit(v,d[j]);if(Math.abs(u.x*w.x+u.y*w.y)>.05)continue;const sc=-((u.x+w.x)*cx+(u.y+w.y)*cy);if(sc<bs){bs=sc;best=[d[i],d[j]]}}
+if(!best)return false;if(S.rights.some(k=>k.v===v&&((k.a===best[0]&&k.b===best[1])||(k.a===best[1]&&k.b===best[0]))))return true;S.rights.push({v,a:best[0],b:best[1]});return true}
+function unit(v,a){const d=dist(v,a)||1;return{x:(a.x-v.x)/d,y:(a.y-v.y)/d}}
+function rc(k){const u=unit(k.v,k.a),w=unit(k.v,k.b);return{x:k.v.x+(u.x+w.x)*6,y:k.v.y+(u.y+w.y)*6}}
+const rnd=v=>Math.round(v*1000)/1000;
+function arcSw(k){const ta=Math.atan2(k.a.y-k.c.y,k.a.x-k.c.x),te=Math.atan2(k.e.y-k.c.y,k.e.x-k.c.x),T=2*Math.PI;let w=k.cw?te-ta:ta-te;return((w%T)+T)%T}
+function arcPts(k,n){const R=dist(k.c,k.a),ta=Math.atan2(k.a.y-k.c.y,k.a.x-k.c.x),w=arcSw(k),g=k.cw?1:-1,P=[];for(let i=0;i<=n;i++){const t=ta+g*w*i/n;P.push({x:k.c.x+R*Math.cos(t),y:k.c.y+R*Math.sin(t)})}return P}
+function arcPoly(k){const P=arcPts(k,48);return k.cl=='s'?[{x:k.c.x,y:k.c.y},...P]:P}
+function arcD(k,fill){const R=dist(k.c,k.a),big=arcSw(k)>Math.PI+1e-9?1:0,sf=k.cw?1:0;const d=(fill&&k.cl=='s'?`M${k.c.x} ${k.c.y}L${k.a.x} ${k.a.y}`:`M${k.a.x} ${k.a.y}`)+`A${R} ${R} 0 ${big} ${sf} ${k.e.x} ${k.e.y}`;return fill?d+'Z':d}
+function fixArcs(){S.arcs.forEach(k=>{const R=dist(k.c,k.a),d=dist(k.c,k.e);if(R<1e-9||d<1e-9)return;k.e.x=rnd(k.c.x+(k.e.x-k.c.x)/d*R);k.e.y=rnd(k.c.y+(k.e.y-k.c.y)/d*R)})}
+function hitArc(q){return S.arcs.find(k=>{const P=arcPts(k,48);for(let i=0;i<P.length-1;i++)if(dSeg(q,P[i],P[i+1])<7)return true;return !!k.f&&pip(q,arcPoly(k))})}
+function addLn(a,b){if(!S.lines.some(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a)))S.lines.push({a,b,d:$('dash').checked,t:false})}
+function mkArc(c,a,e,cw){const k={c,a,e,cw,d:$('dash').checked,f:$('cfill').checked?$('col').value:null,cl:$('acl').value};S.arcs.push(k);fixArcs();if(k.cl=='s'){addLn(c,a);addLn(c,e);if(Math.abs(arcSw(k)-Math.PI/2)<.01&&$('sqmk').checked)S.rights.push({v:c,a:a,b:e})}else if(k.cl=='c')addLn(a,e)}
+function draw(ed=true){fixArcs();let s='';
+if(ed&&$('showgrid').checked){const g=+$('grid').value;let d='';for(let x=0;x<=640;x+=g)d+=`M${x} 0V480`;for(let y=0;y<=480;y+=g)d+=`M0 ${y}H640`;s+=`<path d="${d}" stroke="#e6e6e6" stroke-width="1" fill="none"/>`}
+S.shades.filter(h=>h.c).forEach(h=>s+=`<polygon points="${h.p.map(p=>p.x+','+p.y).join(' ')}" fill="${h.c}" fill-opacity=".6"/>`);
+S.circles.forEach(k=>s+=`<circle cx="${k.c.x}" cy="${k.c.y}" r="${dist(k.c,k.a)}" fill="${k.f||'none'}" fill-opacity=".6" stroke="#222" stroke-width="2"${k.d?' stroke-dasharray="6 5"':''}/>`);
+S.arcs.forEach(k=>{if(k.f)s+=`<path d="${arcD(k,1)}" fill="${k.f}" fill-opacity=".6" stroke="none"/>`;s+=`<path d="${arcD(k,0)}" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round"${k.d?' stroke-dasharray="6 5"':''}/>`});
+S.lines.forEach(l=>s+=`<line x1="${l.a.x}" y1="${l.a.y}" x2="${l.b.x}" y2="${l.b.y}" stroke="#222" stroke-width="2" stroke-linecap="round"${l.d?' stroke-dasharray="6 5"':''}/>`);
+S.lines.forEach(l=>{if(!l.t)return;const u=unit(l.a,l.b),h=7;let d='';[l.a,l.b].forEach(p=>{d+=`M${p.x-u.y*h} ${p.y+u.x*h}L${p.x+u.y*h} ${p.y-u.x*h}`});s+=`<path d="${d}" stroke="#222" stroke-width="2" stroke-linecap="round"/>`});
+S.rights.forEach(k=>{const u=unit(k.v,k.a),w=unit(k.v,k.b),z=12,P=[[k.v.x+u.x*z,k.v.y+u.y*z],[k.v.x+(u.x+w.x)*z,k.v.y+(u.y+w.y)*z],[k.v.x+w.x*z,k.v.y+w.y*z]];s+=`<path d="M${P[0]}L${P[1]}L${P[2]}" fill="none" stroke="#222" stroke-width="1.5"/>`});
+S.pars.forEach(m=>{const P=parPos(m);let u=unit(m.l.a,m.l.b);if(u.x<-1e-6||(Math.abs(u.x)<1e-6&&u.y>0))u={x:-u.x,y:-u.y};if(m.f)u={x:-u.x,y:-u.y};const n={x:-u.y,y:u.x};let d='';for(let i=0;i<m.n;i++){const o=(i-(m.n-1)/2)*8,bx=P.x+u.x*o,by=P.y+u.y*o;d+=`M${bx-u.x*4+n.x*5} ${by-u.y*4+n.y*5}L${bx+u.x*3} ${by+u.y*3}L${bx-u.x*4-n.x*5} ${by-u.y*4-n.y*5}`}s+=`<path d="${d}" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`});
+S.pts.forEach(p=>{if(p.s)s+=`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#222"/>`;else if(ed)s+=`<circle cx="${p.x}" cy="${p.y}" r="3" fill="none" stroke="#99a" stroke-dasharray="2 2"/>`});
+S.labels.forEach(l=>s+=`<text x="${l.x}" y="${l.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" font-size="15" fill="#222" stroke="#fff" stroke-width="4" paint-order="stroke">${l.t.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`);
+if(ed)pend.forEach(p=>s+=`<circle cx="${p.x}" cy="${p.y}" r="7" fill="none" stroke="#2a6fdb" stroke-width="2"/>`);
+return s}
+function render(){svg.innerHTML=draw(true)}
+const _d=draw;draw=function(ed=true){const s=_d(ed);if(ed)svg.innerHTML=s;return s};
+function svgCode(){const xs=[],ys=[];S.pts.forEach(p=>{xs.push(p.x);ys.push(p.y)});S.labels.forEach(l=>{xs.push(l.x-l.t.length*4,l.x+l.t.length*4);ys.push(l.y-10,l.y+10)});S.circles.forEach(k=>{const r=dist(k.c,k.a);xs.push(k.c.x-r,k.c.x+r);ys.push(k.c.y-r,k.c.y+r)});S.arcs.forEach(k=>arcPts(k,24).forEach(p=>{xs.push(p.x);ys.push(p.y)}));if(!xs.length)return'';const m=16,x0=Math.min(...xs)-m,y0=Math.min(...ys)-m,w=Math.max(...xs)-x0+m,h=Math.max(...ys)-y0+m;return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${w} ${h}" width="${w}" height="${h}">${_d(false)}</svg>`}
+$('undo').onclick=()=>{if(hist.length){des(hist.pop());draw()}};
+$('clr').onclick=()=>{save();S.pts=[];S.lines=[];S.shades=[];S.labels=[];S.rights=[];S.pars=[];S.circles=[];S.arcs=[];pend=[];draw()};
+$('fin').onclick=fin;
+function msg(t){$('msg').textContent=t}
+function out(t,w){if(!t)return msg('Draw something first, then try again.');const io=$('io');io.value=t;io.focus();io.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}msg(w+(ok?' copied to your clipboard. It is also in the box at the bottom of the page.':' is in the box at the bottom of the page. Click in the box, select all, and copy it.'));io.scrollIntoView({block:'nearest'})}
+$('exs').onclick=()=>out(svgCode(),'SVG code');
+$('exj').onclick=()=>out(S.pts.length?ser():'','JSON');
+$('imj').onclick=()=>{const t=$('io').value.trim();if(!t){msg('Paste saved JSON into the box at the bottom of the page first, then press Load JSON.');$('io').scrollIntoView({block:'nearest'});return}try{save();des(t);draw();msg('Loaded.')}catch(e){hist.pop();msg('That JSON could not be read.')}};
+$('exp').onclick=()=>{const c=svgCode();if(!c)return msg('Draw something first, then try again.');const im=new Image();im.onerror=()=>msg('The PNG could not be made in this browser. Use Get SVG code instead.');im.onload=()=>{const k=2,cv=document.createElement('canvas');cv.width=im.width*k;cv.height=im.height*k;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);const o=$('png');try{o.src=cv.toDataURL('image/png')}catch(e){return msg('The PNG could not be made in this browser. Use Get SVG code instead.')}o.hidden=false;msg('PNG is shown at the bottom of the page. Right-click (or long-press) it to save.');o.scrollIntoView({block:'nearest'})};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(c)};
+['snap','grid','showgrid'].forEach(i=>$(i).onchange=()=>draw());
+$('hlp').onclick=()=>{$('help').hidden=!$('help').hidden};
+function fmtN(v){const den=+$('fmt').value;if(!den)return String(Math.round(v*10)/10);const n=Math.round(v*den),w=Math.floor(n/den),r=n-w*den;if(!r)return String(w);const g=(a,b)=>b?g(b,a%b):a,k=g(r,den),f=r/k+'/'+den/k;return w?w+' '+f:f}
+$('lens').onclick=()=>{const g=+$('grid').value,u=+$('upg').value||1,un=$('unit').value.trim(),c=cen();let n=0;save();
+S.lines.forEach(l=>{const L=dist(l.a,l.b);if(L<1)return;const t=fmtN(L/g*u)+(un?' '+un:'');
+const mx=(l.a.x+l.b.x)/2,my=(l.a.y+l.b.y)/2;let nx=-(l.b.y-l.a.y)/L,ny=(l.b.x-l.a.x)/L;if(nx*(mx-c.x)+ny*(my-c.y)<0){nx=-nx;ny=-ny}
+const x=mx+nx*14,y=my+ny*14;if(S.labels.some(b=>b.t==t&&Math.hypot(b.x-x,b.y-y)<30))return;S.labels.push({x,y,t});n++});
+if(!n)hist.pop();draw()};
+function nb(v){const d=[];S.lines.forEach(l=>{(l.a===v?[l.b]:l.b===v?[l.a]:dSeg(v,l.a,l.b)<1?[l.a,l.b]:[]).forEach(q=>d.push(q))});return d}
+$('angs').onclick=()=>{const c=cen();let n=0;save();
+S.pts.forEach(v=>{let a=nb(v).map(q=>Math.atan2(q.y-v.y,q.x-v.x)).sort((x,y)=>x-y);a=a.filter((x,i)=>i==0||x-a[i-1]>.01);if(a.length>1&&a[0]+2*Math.PI-a[a.length-1]<.01)a.pop();if(a.length<2)return;
+const arcs=a.map((x,i)=>[x,(i+1<a.length?a[i+1]:a[0]+2*Math.PI)-x]);let use=arcs;
+if(a.length==2){const f=arcs.filter(k=>{const m=k[0]+k[1]/2;return Math.cos(m)*(c.x-v.x)+Math.sin(m)*(c.y-v.y)>0});use=f.length==1?f:arcs.filter(k=>k[1]<Math.PI)}
+use.forEach(([s,w])=>{if(Math.abs(w-Math.PI)<.01||(a.length>2&&w>Math.PI))return;const deg=Math.round(w*1800/Math.PI)/10;if(Math.abs(deg-90)<.5&&S.rights.some(k=>k.v===v))return;
+const m=s+w/2,x=v.x+Math.cos(m)*30,y=v.y+Math.sin(m)*30,t=deg+'°';if(S.labels.some(b=>b.t==t&&Math.hypot(b.x-x,b.y-y)<20))return;S.labels.push({x,y,t});n++})});
+if(!n)hist.pop();draw()};
+$('pls').onclick=()=>{const c=cen(),used=new Set(S.labels.map(l=>l.t));let n=0,i=0;save();
+const nextL=()=>{let t;do{t=i<26?String.fromCharCode(65+i):String.fromCharCode(65+i%26)+Math.floor(i/26);i++}while(used.has(t));used.add(t);return t};
+S.pts.forEach(p=>{if(!p.s)return;if(S.labels.some(l=>/^[A-Z]\d?$/.test(l.t)&&Math.hypot(l.x-p.x,l.y-p.y)<22))return;
+let sx=0,sy=0;nb(p).forEach(q=>{const u=unit(p,q);sx+=u.x;sy+=u.y});const L=Math.hypot(sx,sy);let ox,oy;if(L>.3){ox=-sx/L;oy=-sy/L}else{const d=Math.hypot(p.x-c.x,p.y-c.y)||1;ox=(p.x-c.x)/d;oy=(p.y-c.y)/d}
+S.labels.push({x:p.x+ox*16,y:p.y+oy*16,t:nextL()});n++});
+if(!n)hist.pop();draw()};
+$('asw').onchange=()=>{$('aang').hidden=$('asw').value!='num'};
+ui();
+</script></body></html>
